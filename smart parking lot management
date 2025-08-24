@@ -1,0 +1,181 @@
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+// Structure for a parked car node
+struct Car {
+    string plateNumber;
+    int slotNumber;
+    Car* next;
+
+    Car(const string& plate, int slot) : plateNumber(plate), slotNumber(slot), next(nullptr) {}
+};
+
+class ParkingLot {
+private:
+    Car* head;          // Linked list head
+    int capacity;       // Total parking slots
+    int occupiedSlots;  // Currently occupied slots
+
+public:
+    ParkingLot(int cap) : head(nullptr), capacity(cap), occupiedSlots(0) {}
+
+    ~ParkingLot() {
+        // Free all allocated nodes
+        while (head) {
+            Car* tmp = head;
+            head = head->next;
+            delete tmp;
+        }
+    }
+
+    bool isFull() const {
+        return occupiedSlots >= capacity;
+    }
+
+    bool isEmpty() const {
+        return head == nullptr;
+    }
+
+    // Add a car if there is space
+    bool parkCar(const string& plateNumber) {
+        if (isFull()) {
+            cout << "Parking lot full! Cannot park car " << plateNumber << ".\n";
+            return false;
+        }
+
+        // Find first available slot number
+        int slot = findAvailableSlot();
+
+        // Create a new car node
+        Car* newCar = new Car(plateNumber, slot);
+
+        // Insert at the beginning of the linked list
+        newCar->next = head;
+        head = newCar;
+
+        occupiedSlots++;
+
+        cout << "Car " << plateNumber << " parked at slot " << slot << ".\n";
+        return true;
+    }
+
+    // Remove a car by plate number
+    bool exitCar(const string& plateNumber) {
+        if (isEmpty()) {
+            cout << "Parking lot empty. No cars to exit.\n";
+            return false;
+        }
+
+        Car* current = head;
+        Car* prev = nullptr;
+
+        while (current && current->plateNumber != plateNumber) {
+            prev = current;
+            current = current->next;
+        }
+
+        if (!current) {
+            cout << "Car with plate " << plateNumber << " not found.\n";
+            return false;
+        }
+
+        if (prev == nullptr) {
+            // Remove head
+            head = current->next;
+        } else {
+            prev->next = current->next;
+        }
+
+        cout << "Car " << plateNumber << " left slot " << current->slotNumber << ".\n";
+        delete current;
+        occupiedSlots--;
+
+        return true;
+    }
+
+    void displayParkingLot() const {
+        if (isEmpty()) {
+            cout << "Parking lot is empty.\n";
+            return;
+        }
+
+        cout << "Currently parked cars:\n";
+        Car* current = head;
+        while (current) {
+            cout << "Slot " << current->slotNumber << ": " << current->plateNumber << "\n";
+            current = current->next;
+        }
+    }
+
+private:
+    // Find the first available slot number not currently used
+    int findAvailableSlot() const {
+        bool* slotsUsed = new bool[capacity + 1](); // index 0 unused for convenience
+
+        Car* current = head;
+        while (current) {
+            if (current->slotNumber > 0 && current->slotNumber <= capacity) {
+                slotsUsed[current->slotNumber] = true;
+            }
+            current = current->next;
+        }
+
+        for (int i = 1; i <= capacity; ++i) {
+            if (!slotsUsed[i]) {
+                delete[] slotsUsed;
+                return i;
+            }
+        }
+
+        delete[] slotsUsed;
+        return -1; // Should never happen if capacity and occupiedSlots are tracked properly
+    }
+};
+
+int main() {
+    int capacity;
+    cout << "Enter parking lot capacity: ";
+    cin >> capacity;
+    cin.ignore();
+
+    ParkingLot lot(capacity);
+
+    int choice;
+    string plate;
+
+    do {
+        cout << "\n--- Smart Parking Lot Management ---\n";
+        cout << "1. Park a car\n";
+        cout << "2. Car exit\n";
+        cout << "3. Display parked cars\n";
+        cout << "4. Exit\n";
+        cout << "Choose an option: ";
+        cin >> choice;
+        cin.ignore();
+
+        switch (choice) {
+            case 1:
+                cout << "Enter car plate number: ";
+                getline(cin, plate);
+                lot.parkCar(plate);
+                break;
+            case 2:
+                cout << "Enter car plate number to exit: ";
+                getline(cin, plate);
+                lot.exitCar(plate);
+                break;
+            case 3:
+                lot.displayParkingLot();
+                break;
+            case 4:
+                cout << "Exiting system.\n";
+                break;
+            default:
+                cout << "Invalid choice. Try again.\n";
+        }
+    } while (choice != 4);
+
+    return 0;
+}
